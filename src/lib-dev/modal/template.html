@@ -1,7 +1,11 @@
 <h2>Base</h2>
 
-<button (click)="showModal()">Show Modal</button>
-<mc-modal [(mcVisible)]="isVisible" mcTitle="The first Modal" (mcOnCancel)="handleCancel()" (mcOnOk)="handleOk()">
+<button mc-button (click)="showModal()">Show Modal</button>
+<mc-modal [(mcVisible)]="isVisible"
+          mcTitle="The first Modal"
+          (mcOnCancel)="handleCancel()" (mcOnOk)="handleOk()"
+          mcCancelText="Cancel"
+          mcOkText="Accept">
     <p>Content one</p>
     <p>Content two</p>
     <p>Content three</p>
@@ -9,8 +13,8 @@
 
 <h2>Confirm</h2>
 
-<button (click)="showConfirm()">Confirm</button>
-<button (click)="showDeleteConfirm()">Delete</button>
+<button mc-button (click)="showConfirm()">Confirm</button>
+<button mc-button (click)="showDeleteConfirm()">Delete</button>
 
 
 <h3>Modal from service</h3>
@@ -18,7 +22,7 @@
     <span>Template</span>
 </button>
 <ng-template #tplTitle>
-    <span>Title Template</span>
+    <span>Заголовок окна</span>
 </ng-template>
 <ng-template #tplContent>
     <p>some contents...</p>
@@ -30,3 +34,18 @@
 <ng-template #tplFooter>
     <button mc-button color="primary" (click)="destroyTplModal()">Close after submit</button>
 </ng-template>
+
+<h3>Modal with custom component</h3>
+<button mc-button color="primary" (click)="createComponentModal()">
+   Open
+</button>
+
+
+<h3>Many many modals</h3>
+<button mc-button color="primary" (click)="openAndCloseAll()">Open more modals then close all after 10s</button>
+<mc-modal [(mcVisible)]="htmlModalVisible"
+          [mcMask]="true"
+          mcOkText="Accept"
+          mcCancelText="Cancel"
+          [mcZIndex]="1001"
+          mcTitle="Non-service html modal">This is a non-service html modal</mc-modal>

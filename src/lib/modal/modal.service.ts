@@ -11,7 +11,9 @@ import { ConfirmType, IModalOptions, IModalOptionsForService } from './modal.typ
 
 // A builder used for managing service creating modals
 export class ModalBuilderForService {
-    private modalRef: ComponentRef<McModalComponent>; // Modal ComponentRef, "null" means it has been destroyed
+
+    // Modal ComponentRef, "null" means it has been destroyed
+    private modalRef: ComponentRef<McModalComponent>;
     private overlayRef: OverlayRef;
 
     constructor(private overlay: Overlay, options: IModalOptionsForService = {}) {
@@ -40,7 +42,8 @@ export class ModalBuilderForService {
 
     private changeProps(options: IModalOptions): void {
         if (this.modalRef) {
-            Object.assign(this.modalRef.instance, options); // DANGER: here not limit user's inputs at runtime
+            // here not limit user's inputs at runtime
+            Object.assign(this.modalRef.instance, options);
         }
     }
 
@@ -73,10 +76,11 @@ export class McModalService {
     }
 
     create<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
+
         if (typeof options.mcOnCancel !== 'function') {
+            // Leave a empty function to close this modal by default
             // tslint:disable-next-line
-            options.mcOnCancel = () => {
-            }; // Leave a empty function to close this modal by default
+            options.mcOnCancel = () => {};
         }
 
         return new ModalBuilderForService(this.overlay, options).getInstance();
@@ -88,12 +92,13 @@ export class McModalService {
         }
         if (!('mcWidth' in options)) {
             // tslint:disable-next-line
-            options.mcWidth = 416;
+            options.mcWidth = 480;
         }
-        if (typeof options.mcOnOk !== 'function') { // NOTE: only support function currently by calling confirm()
+        // NOTE: only support function currently by calling confirm()
+        if (typeof options.mcOnOk !== 'function') {
+            // Leave a empty function to close this modal by default
             // tslint:disable-next-line
-            options.mcOnOk = () => {
-            }; // Leave a empty function to close this modal by default
+            options.mcOnOk = () => {};
         }
 
         options.mcModalType = 'confirm';
@@ -103,32 +108,17 @@ export class McModalService {
         return this.create(options);
     }
 
-    info<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
-        return this.simpleConfirm(options, 'info');
-    }
-
     success<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
         return this.simpleConfirm(options, 'success');
     }
 
-    error<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
-        return this.simpleConfirm(options, 'error');
-    }
-
-    warning<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
-        return this.simpleConfirm(options, 'warning');
+    delete<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
+        return this.simpleConfirm(options, 'delete');
     }
 
     private simpleConfirm<T>(options: IModalOptionsForService<T> = {}, confirmType: ConfirmType): McModalRef<T> {
-        if (!('mcIconType' in options)) {
-            options.mcIconType = {
-                info: 'info-circle',
-                success: 'check-circle',
-                error: 'cross-circle',
-                warning: 'exclamation-circle'
-            }[confirmType];
-        }
-        if (!('mcCancelText' in options)) { // Remove the Cancel button if the user not specify a Cancel button
+        // Remove the Cancel button if the user not specify a Cancel button
+        if (!('mcCancelText' in options)) {
             // @ts-ignore
             options.mcCancelText = null;
         }

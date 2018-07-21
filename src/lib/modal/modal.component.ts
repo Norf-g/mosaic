@@ -1,6 +1,8 @@
+import { Observable } from 'rxjs';
+
 import { DOCUMENT } from '@angular/common';
 import {
-    AfterViewInit,
+    AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
     Component,
     ComponentFactoryResolver,
     ComponentRef,
@@ -18,39 +20,113 @@ import {
     TemplateRef,
     Type,
     ViewChild,
-    ViewContainerRef
+    ViewContainerRef, ViewEncapsulation
 } from '@angular/core';
-import { Overlay, OverlayRef } from '@ptsecurity/cdk/overlay';
-import { InputBoolean } from '@ptsecurity/mosaic/core';
-import { Observable } from 'rxjs';
 
-import { McMeasureScrollbarService } from '../core/services/measure-scrollbar.service';
+import { Overlay, OverlayRef } from '@ptsecurity/cdk/overlay';
+import { McMeasureScrollbarService } from '@ptsecurity/mosaic/core';
 
 import { McModalControlService } from './modal-control.service';
 import { McModalRef } from './modal-ref.class';
+import { IModalButtonOptions, IModalOptions, ModalType, OnClickCallback } from './modal.type';
 // tslint:disable-next-line
 import ModalUtil from './modal-util';
-import { IModalButtonOptions, IModalOptions, ModalType, OnClickCallback } from './modal.type';
 
-
-export const MODAL_ANIMATE_DURATION = 200; // Duration when perform animations (ms)
-
+// Duration when perform animations (ms)
+export const MODAL_ANIMATE_DURATION = 200;
 
 type AnimationState = 'enter' | 'leave' | null;
 
 @Component({
     selector: 'mc-modal',
     templateUrl: './modal.component.html',
-    styleUrls: ['./modal.css']
+    styleUrls: ['./modal.css'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    encapsulation: ViewEncapsulation.None
 })
 export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     implements OnInit, OnChanges, AfterViewInit, OnDestroy, IModalOptions {
 
-    get afterOpen(): Observable<void> { // Observable alias for mcAfterOpen
+    // tslint:disable-next-line:no-any
+    @Input() mcModalType: ModalType = 'default';
+    // If not specified, will use <ng-content>
+    @Input() mcContent: string | TemplateRef<{}> | Type<T>;
+    // available when mcContent is a component
+    @Input() mcComponentParams: object;
+    // Default Modal ONLY
+    @Input() mcFooter: string | TemplateRef<{}> | IModalButtonOptions<T>[];
+
+    @Input()
+    get mcVisible() { return this._mcVisible; }
+    set mcVisible(value) { this._mcVisible = value; }
+  _mcVisible = false;
+
+    @Output() mcVisibleChange = new EventEmitter<boolean>();
+
+    @Input() mcZIndex: number = 1000;
+    @Input() mcWidth: number | string = 480;
+    @Input() mcWrapClassName: string;
+    @Input() mcClassName: string;
+    @Input() mcStyle: object;
+    @Input() mcTitle: string | TemplateRef<{}>;
+
+    @Input()
+    get mcClosable() { return this._mcClosable; }
+    set mcClosable(value) { this._mcClosable = value; }
+    _mcClosable = true;
+
+    @Input()
+    get mcMask() { return this._mcMask; }
+    set mcMask(value) { this._mcMask = value; }
+    _mcMask = true;
+
+    @Input()
+    get mcMaskClosable() { return this._mcMaskClosable; }
+    set mcMaskClosable(value) { this._mcMaskClosable = value; }
+    _mcMaskClosable = true;
+
+    @Input() mcMaskStyle: object;
+    @Input() mcBodyStyle: object;
+
+    // Trigger when modal open(visible) after animations
+    @Output() mcAfterOpen = new EventEmitter<void>();
+    // Trigger when modal leave-animation over
+    @Output() mcAfterClose = new EventEmitter<R>();
+
+    // --- Predefined OK & Cancel buttons
+    @Input() mcOkText: string;
+    @Input() mcOkType = 'primary';
+
+    @Input()
+    get mcOkLoading() { return this._mcOkLoading; }
+    set mcOkLoading(value) { this._mcOkLoading = value; }
+    _mcOkLoading = false;
+
+    @Input() @Output() mcOnOk: EventEmitter<T> | OnClickCallback<T> = new EventEmitter<T>();
+    // Only aim to focus the ok button that needs to be auto focused
+    @ViewChild('autoFocusButtonOk', {read: ElementRef}) autoFocusButtonOk: ElementRef;
+    @Input() mcCancelText: string;
+
+    @Input()
+    get mcCancelLoading() { return this._mcCancelLoading; }
+    set mcCancelLoading(value) { this._mcCancelLoading = value; }
+    _mcCancelLoading = false;
+
+    @Input() @Output() mcOnCancel: EventEmitter<T> | OnClickCallback<T> = new EventEmitter<T>();
+    @ViewChild('modalContainer') modalContainer: ElementRef;
+    @ViewChild('bodyContainer', {read: ViewContainerRef}) bodyContainer: ViewContainerRef;
+    maskAnimationClassMap: object;
+    modalAnimationClassMap: object;
+    // The origin point that animation based on
+    transformOrigin = '0px 0px 0px';
+
+    // Observable alias for mcAfterOpen
+    get afterOpen(): Observable<void> {
         return this.mcAfterOpen.asObservable();
     }
 
-    get afterClose(): Observable<R> { // Observable alias for mcAfterClose
+    // Observable alias for mcAfterClose
+    get afterClose(): Observable<R> {
         return this.mcAfterClose.asObservable();
     }
 
@@ -62,55 +138,15 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         return this.mcCancelText;
     }
 
+    // Indicate whether this dialog should hidden
     get hidden(): boolean {
         return !this.mcVisible && !this.animationState;
-    } // Indicate whether this dialog should hidden
+    }
 
-    // tslint:disable-next-line:no-any
-    @Input() mcModalType: ModalType = 'default';
-    @Input() mcContent: string | TemplateRef<{}> | Type<T>; // [STATIC] If not specified, will use <ng-content>
-    @Input() mcComponentParams: object; // [STATIC] ONLY avaliable when mcContent is a component
-    @Input() mcFooter: string | TemplateRef<{}> | IModalButtonOptions<T>[]; // [STATIC] Default Modal ONLY
-
-    @Input() @InputBoolean() mcVisible: boolean = false;
-    @Output() mcVisibleChange = new EventEmitter<boolean>();
-
-    @Input() mcZIndex: number = 1000;
-    @Input() mcWidth: number | string = 520;
-    @Input() mcWrapClassName: string;
-    @Input() mcClassName: string;
-    @Input() mcStyle: object;
-    @Input() mcIconType: string = 'question-circle'; // Confirm Modal ONLY
-    @Input() mcTitle: string | TemplateRef<{}>;
-    @Input() @InputBoolean() mcClosable: boolean = true;
-    @Input() @InputBoolean() mcMask: boolean = true;
-    @Input() @InputBoolean() mcMaskClosable: boolean = true;
-    @Input() mcMaskStyle: object;
-    @Input() mcBodyStyle: object;
-
-    @Output() mcAfterOpen = new EventEmitter<void>(); // Trigger when modal open(visible) after animations
-    @Output() mcAfterClose = new EventEmitter<R>(); // Trigger when modal leave-animation over
-
-    // --- Predefined OK & Cancel buttons
-    @Input() mcOkText: string;
-
-    @Input() mcOkType = 'primary';
-    @Input() @InputBoolean() mcOkLoading: boolean = false;
-    @Input() @Output() mcOnOk: EventEmitter<T> | OnClickCallback<T> = new EventEmitter<T>();
-    // Only aim to focus the ok button that needs to be auto focused
-    @ViewChild('autoFocusButtonOk', {read: ElementRef}) autoFocusButtonOk: ElementRef;
-    @Input() mcCancelText: string;
-
-    @Input() @InputBoolean() mcCancelLoading: boolean = false;
-    @Input() @Output() mcOnCancel: EventEmitter<T> | OnClickCallback<T> = new EventEmitter<T>();
-    @ViewChild('modalContainer') modalContainer: ElementRef;
-    @ViewChild('bodyContainer', {read: ViewContainerRef}) bodyContainer: ViewContainerRef;
-    maskAnimationClassMap: object;
-    modalAnimationClassMap: object;
-    transformOrigin = '0px 0px 0px'; // The origin point that animation based on
-
-    private contentComponentRef: ComponentRef<T>; // Handle the reference when using mcContent as Component
-    private animationState: AnimationState; // Current animation state
+    // Handle the reference when using mcContent as Component
+    private contentComponentRef: ComponentRef<T>;
+    // Current animation state
+    private animationState: AnimationState;
     private container: HTMLElement | OverlayRef;
 
     constructor(
@@ -121,7 +157,8 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         private viewContainer: ViewContainerRef,
         private mcMeasureScrollbarService: McMeasureScrollbarService,
         private modalControl: McModalControlService,
-        @Inject(DOCUMENT) private document: any) { // tslint:disable-line:no-any
+        private changeDetector: ChangeDetectorRef,
+        @Inject(DOCUMENT) private document: any) {
 
         super();
     }
@@ -130,11 +167,13 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
 
     ngOnInit(): void {
 
+        // Create component along without View
         if (this.isComponent(this.mcContent)) {
-            this.createDynamicComponent(this.mcContent as Type<T>); // Create component along without View
+            this.createDynamicComponent(this.mcContent as Type<T>);
         }
 
-        if (this.isModalButtons(this.mcFooter)) { // Setup default button options
+        // Setup default button options
+        if (this.isModalButtons(this.mcFooter)) {
             this.mcFooter = this.formatModalButtons(this.mcFooter as IModalButtonOptions<T>[]);
         }
 
@@ -188,7 +227,8 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         this.changeVisibleFromInside(false, result);
     }
 
-    destroy(result?: R): void { // Destroy equals Close
+    // Destroy equals Close
+    destroy(result?: R): void {
         this.close(result);
     }
 
@@ -242,14 +282,17 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     // AoT
     // tslint:disable-next-line
     onClickOkCancel(type: 'ok' | 'cancel'): void {
-        const trigger = {ok: this.mcOnOk, cancel: this.mcOnCancel}[type];
-        const loadingKey = {ok: 'mcOkLoading', cancel: 'mcCancelLoading'}[type];
+        const trigger = { ok: this.mcOnOk, cancel: this.mcOnCancel }[type];
+        const loadingKey = { ok: 'mcOkLoading', cancel: 'mcCancelLoading' }[type];
+
         if (trigger instanceof EventEmitter) {
             trigger.emit(this.getContentComponent());
         } else if (typeof trigger === 'function') {
+
             const result = trigger(this.getContentComponent());
             // Users can return "false" to prevent closing by default
             const caseClose = (doClose: boolean | void | {}) => (doClose !== false) && this.close(doClose as R);
+
             if (isPromise(result)) {
                 this[loadingKey] = true;
                 const handleThen = (doClose) => {
@@ -285,18 +328,21 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
 
     // Do rest things when visible state changed
     private handleVisibleStateChange(visible: boolean, animation: boolean = true, closeResult?: R): Promise<any> {
-        if (visible) { // Hide scrollbar at the first time when shown up
+        // Hide scrollbar at the first time when shown up
+        if (visible) {
             this.changeBodyOverflow(1);
         }
 
         return Promise
             .resolve(animation && this.animateTo(visible))
-            .then(() => { // Emit open/close event after animations over
+            // Emit open/close event after animations over
+            .then(() => {
                 if (visible) {
                     this.mcAfterOpen.emit();
                 } else {
                     this.mcAfterClose.emit(closeResult);
-                    this.changeBodyOverflow(); // Show/hide scrollbar when animation is over
+                    // Show/hide scrollbar when animation is over
+                    this.changeBodyOverflow();
                 }
             });
     }
@@ -318,7 +364,8 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     // AoT
     // tslint:disable-next-line
     onButtonClick(button: IModalButtonOptions<T>): void {
-        const result = this.getButtonCallableProp(button, 'onClick'); // Call onClick directly
+        // Call onClick directly
+        const result = this.getButtonCallableProp(button, 'onClick');
         if (isPromise(result)) {
             button.loading = true;
             (result as Promise<{}>).then(() => button.loading = false).catch(() => button.loading = false);
@@ -350,12 +397,20 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
                 [`zoom-${state}-active`]: true
             };
         } else {
-            this.maskAnimationClassMap = this.modalAnimationClassMap = {};
+            // @ts-ignore
+            this.maskAnimationClassMap = this.modalAnimationClassMap = null;
+        }
+
+        if (this.contentComponentRef) {
+            this.contentComponentRef.changeDetectorRef.markForCheck();
+        } else {
+            this.changeDetector.markForCheck();
         }
     }
 
     private animateTo(isVisible: boolean): Promise<any> {
-        if (isVisible) { // Figure out the lastest click position when shows up
+        // Figure out the lastest click position when shows up
+        if (isVisible) {
             // [NOTE] Using timeout due to the document.click event is fired later than visible change,
             // so if not postponed to next event-loop, we can't get the lastest click position
             window.setTimeout(() => this.updateTransformOrigin());
@@ -363,7 +418,8 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
 
         this.changeAnimationState(isVisible ? 'enter' : 'leave');
 
-        return new Promise((resolve) => window.setTimeout(() => { // Return when animation is over
+        // Return when animation is over
+        return new Promise((resolve) => window.setTimeout(() => {
             this.changeAnimationState(null);
             resolve();
         }, MODAL_ANIMATE_DURATION));
@@ -397,10 +453,13 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
             providers: [{provide: McModalRef, useValue: this}],
             parent: this.viewContainer.parentInjector
         });
+
         this.contentComponentRef = factory.create(childInjector);
+
         if (this.mcComponentParams) {
             Object.assign(this.contentComponentRef.instance, this.mcComponentParams);
         }
+
         // Do the first change detection immediately
         // (or we do detection at ngAfterViewInit, multi-changes error will be thrown)
         this.contentComponentRef.changeDetectorRef.detectChanges();
@@ -410,6 +469,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     private updateTransformOrigin(): void {
         const modalElement = this.modalContainer.nativeElement as HTMLElement;
         const lastPosition = ModalUtil.getLastClickPosition();
+
         if (lastPosition) {
             // tslint:disable-next-line
             this.transformOrigin = `${lastPosition.x - modalElement.offsetLeft}px ${lastPosition.y - modalElement.offsetTop}px 0px`;
