@@ -59,7 +59,8 @@ System.config({
         '@ptsecurity/mosaic/radio': 'dist/packages/mosaic/radio/index.js',
         '@ptsecurity/mosaic/checkbox': 'dist/packages/mosaic/checkbox/index.js',
         '@ptsecurity/mosaic/input': 'dist/packages/mosaic/input/index.js',
-        '@ptsecurity/mosaic/form-field': 'dist/packages/mosaic/form-field/index.js'
+        '@ptsecurity/mosaic/form-field': 'dist/packages/mosaic/form-field/index.js',
+        '@ptsecurity/mosaic/modal': 'dist/packages/mosaic/modal/index.js'
     },
     packages: {
         // Thirdparty barrels.
