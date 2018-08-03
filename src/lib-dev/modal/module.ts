@@ -21,10 +21,9 @@ export class ModalDemoComponent {
     tplModal: McModalRef;
     htmlModalVisible = false;
 
-    constructor(private modalService: McModalService) {
-    }
+    constructor(private modalService: McModalService) {}
 
-    showConfirm(): void {
+    showConfirm() {
         this.modalService.success({
             mcContent   : 'Сохранить сделанные изменения в запросе "Все активы с виндой"?',
             mcOkText    : 'Сохранить',
@@ -33,32 +32,42 @@ export class ModalDemoComponent {
         });
     }
 
-    showDeleteConfirm(): void {
+    showDeleteConfirm() {
         this.modalService.delete({
             mcContent   : 'The selected action "Send to Arbor" is used in a rule' +
                 ' or an alert. It will be <b>deleted</b> there too. </br></br>' +
                 'Delete the selected action anyway?',
             mcOkType    : 'danger',
             mcOkText    : 'Yes',
+            mcCancelText: 'No',
             mcWidth     : '480px',
             mcOnOk      : () => console.log('OK'),
-            mcCancelText: 'No',
             mcOnCancel  : () => console.log('Cancel')
         });
     }
 
-    createTplModal(tplTitle: TemplateRef<{}>, tplContent: TemplateRef<{}>, tplFooter: TemplateRef<{}>): void {
+    createTplModal(tplTitle: TemplateRef<{}>, tplContent: TemplateRef<{}>, tplFooter: TemplateRef<{}>) {
         this.tplModal = this.modalService.create({
-            mcTitle: tplTitle,
-            mcContent: tplContent,
-            mcFooter: tplFooter,
+            mcTitle       : tplTitle,
+            mcContent     : tplContent,
+            mcFooter      : tplFooter,
             mcMaskClosable: false,
-            mcClosable: true,
-            mcOnOk: () => console.log('Click ok')
+            mcClosable    : true,
+            mcOnOk        : () => console.log('Click ok')
         });
     }
 
-    createComponentModal(): void {
+    createLongModal() {
+
+        const modal = this.modalService.create({
+            mcTitle     : 'Modal Title',
+            mcContent   : McModalLongCustomComponent,
+            mcOkText    : 'Yes',
+            mcCancelText: 'No'
+        });
+    }
+
+    createComponentModal() {
         const modal = this.modalService.create({
             mcTitle: 'Modal Title',
             mcContent: McModalCustomComponent,
@@ -87,7 +96,7 @@ export class ModalDemoComponent {
         }, 2000);
     }
 
-    openAndCloseAll(): void {
+    openAndCloseAll() {
         let pos = 0;
 
         [ 'create', 'delete', 'success' ].forEach((method) => this.modalService[method]({
@@ -104,25 +113,44 @@ export class ModalDemoComponent {
         window.setTimeout(() => this.modalService.closeAll(), 5000);
     }
 
-    destroyTplModal(): void {
+    destroyTplModal() {
         this.tplModal.destroy();
     }
 
-    showModal(): void {
+    showModal() {
         this.isVisible = true;
     }
 
-    handleOk(): void {
+    handleOk() {
         console.log('Button ok clicked!');
         this.isVisible = false;
     }
 
-    handleCancel(): void {
+    handleCancel() {
         console.log('Button cancel clicked!');
         this.isVisible = false;
     }
 }
 
+
+@Component({
+    selector: 'mc-modal-custom-long-component',
+    template: `
+    <ng-container *ngFor="let item of longText">
+        <p>{{ item }}</p>
+    </ng-container>
+  `
+})
+export class McModalLongCustomComponent {
+
+    longText: any = [];
+
+    constructor() {
+        for (let i = 0; i < 50; i++) {
+            this.longText.push(`text lint - ${i}`);
+        }
+    }
+}
 
 @Component({
     selector: 'mc-modal-custom-component',
@@ -143,7 +171,7 @@ export class McModalCustomComponent {
 
     constructor(private modal: McModalRef) { }
 
-    destroyModal(): void {
+    destroyModal() {
         this.modal.destroy({ data: 'this the result data' });
     }
 }
@@ -151,10 +179,12 @@ export class McModalCustomComponent {
 @NgModule({
     declarations: [
         ModalDemoComponent,
-        McModalCustomComponent
+        McModalCustomComponent,
+        McModalLongCustomComponent
     ],
     entryComponents: [
-        McModalCustomComponent
+        McModalCustomComponent,
+        McModalLongCustomComponent
     ],
     imports: [
         BrowserModule,

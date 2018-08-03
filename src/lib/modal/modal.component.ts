@@ -165,7 +165,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
 
     @Input() mcGetContainer: HTMLElement | OverlayRef | (() => HTMLElement | OverlayRef) = () => this.overlay.create();
 
-    ngOnInit(): void {
+    ngOnInit() {
 
         // Create component along without View
         if (this.isComponent(this.mcContent)) {
@@ -195,14 +195,14 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     // here we can't support "mcContent"(Component) etc. as inputs that initialized dynamically.
     // BUT: User also can change "mcContent" dynamically to trigger UI changes
     // (provided you don't use Component that needs initializations)
-    ngOnChanges(changes: SimpleChanges): void {
+    ngOnChanges(changes: SimpleChanges) {
         if (changes.mcVisible) {
             // Do not trigger animation while initializing
             this.handleVisibleStateChange(this.mcVisible, !changes.mcVisible.firstChange);
         }
     }
 
-    ngAfterViewInit(): void {
+    ngAfterViewInit() {
         // If using Component, it is the time to attach View while bodyContainer is ready
         if (this.contentComponentRef) {
             this.bodyContainer.insert(this.contentComponentRef.hostView);
@@ -213,30 +213,30 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         }
     }
 
-    ngOnDestroy(): void {
+    ngOnDestroy() {
         if (this.container instanceof OverlayRef) {
             this.container.dispose();
         }
     }
 
-    open(): void {
+    open() {
         this.changeVisibleFromInside(true);
     }
 
-    close(result?: R): void {
+    close(result?: R) {
         this.changeVisibleFromInside(false, result);
     }
 
     // Destroy equals Close
-    destroy(result?: R): void {
+    destroy(result?: R) {
         this.close(result);
     }
 
-    triggerOk(): void {
+    triggerOk() {
         this.onClickOkCancel('ok');
     }
 
-    triggerCancel(): void {
+    triggerCancel() {
         this.onClickOkCancel('cancel');
     }
 
@@ -256,7 +256,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         return this.elementRef && this.elementRef.nativeElement;
     }
 
-    onClickMask($event: MouseEvent): void {
+    onClickMask($event: MouseEvent) {
         if (
             this.mcMask &&
             this.mcMaskClosable &&
@@ -273,7 +273,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     }
 
     // AoT
-    onClickCloseBtn(): void {
+    onClickCloseBtn() {
         if (this.mcVisible) {
             this.onClickOkCancel('cancel');
         }
@@ -281,7 +281,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
 
     // AoT
     // tslint:disable-next-line
-    onClickOkCancel(type: 'ok' | 'cancel'): void {
+    onClickOkCancel(type: 'ok' | 'cancel') {
         const trigger = { ok: this.mcOnOk, cancel: this.mcOnCancel }[type];
         const loadingKey = { ok: 'mcOkLoading', cancel: 'mcCancelLoading' }[type];
 
@@ -363,7 +363,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     // On mcFooter's modal button click
     // AoT
     // tslint:disable-next-line
-    onButtonClick(button: IModalButtonOptions<T>): void {
+    onButtonClick(button: IModalButtonOptions<T>) {
         // Call onClick directly
         const result = this.getButtonCallableProp(button, 'onClick');
         if (isPromise(result)) {
@@ -385,7 +385,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         return Promise.resolve();
     }
 
-    private changeAnimationState(state: AnimationState): void {
+    private changeAnimationState(state: AnimationState) {
         this.animationState = state;
         if (state) {
             this.maskAnimationClassMap = {
@@ -447,7 +447,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
      * (this action will be executed when bodyContainer is ready)
      * @param component Component class
      */
-    private createDynamicComponent(component: Type<T>): void {
+    private createDynamicComponent(component: Type<T>) {
         const factory = this.cfr.resolveComponentFactory(component);
         const childInjector = Injector.create({
             providers: [{provide: McModalRef, useValue: this}],
@@ -466,7 +466,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     }
 
     // Update transform-origin to the last click position on document
-    private updateTransformOrigin(): void {
+    private updateTransformOrigin() {
         const modalElement = this.modalContainer.nativeElement as HTMLElement;
         const lastPosition = ModalUtil.getLastClickPosition();
 
@@ -480,7 +480,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
      * Take care of the body's overflow to decide the existense of scrollbar
      * @param plusNum The number that the openModals.length will increase soon
      */
-    private changeBodyOverflow(plusNum: number = 0): void {
+    private changeBodyOverflow(plusNum: number = 0) {
         const openModals = this.modalControl.openModals;
 
         if (openModals.length + plusNum > 0) {
