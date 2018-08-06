@@ -1,7 +1,11 @@
 import { ComponentRef, Injectable } from '@angular/core';
+
+import { Observable } from 'rxjs';
+import { filter } from 'rxjs/operators';
+
+import { ESCAPE } from '@ptsecurity/cdk/keycodes';
 import { Overlay, OverlayRef } from '@ptsecurity/cdk/overlay';
 import { ComponentPortal } from '@ptsecurity/cdk/portal';
-import { Observable } from 'rxjs';
 
 import { McModalControlService } from './modal-control.service';
 import { McModalRef } from './modal-ref.class';
@@ -26,6 +30,13 @@ export class ModalBuilderForService {
         this.changeProps(options);
         this.modalRef.instance.open();
         this.modalRef.instance.mcAfterClose.subscribe(() => this.destroyModal());
+
+        this.overlayRef.keydownEvents()
+            // @ts-ignore
+            .pipe(filter((event: KeyboardEvent) => {
+                return event.keyCode === ESCAPE && options.mcCloseByESC;
+            }))
+            .subscribe(() => this.destroyModal());
     }
 
     getInstance(): McModalComponent {
@@ -83,6 +94,16 @@ export class McModalService {
             options.mcOnCancel = () => {};
         }
 
+        if (!('mcCloseByESC' in options)) {
+            options.mcCloseByESC = true;
+        }
+
+
+        if (!('mcWidth' in options)) {
+            // tslint:disable-next-line
+            options.mcWidth = 480;
+        }
+
         return new ModalBuilderForService(this.overlay, options).getInstance();
     }
 
@@ -90,10 +111,7 @@ export class McModalService {
         if ('mcFooter' in options) {
             console.warn(`The Confirm-Modal doesn't support "mcFooter", this property will be ignored.`);
         }
-        if (!('mcWidth' in options)) {
-            // tslint:disable-next-line
-            options.mcWidth = 480;
-        }
+
         // NOTE: only support function currently by calling confirm()
         if (typeof options.mcOnOk !== 'function') {
             // Leave a empty function to close this modal by default

@@ -69,6 +69,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     @Input() mcClassName: string;
     @Input() mcStyle: object;
     @Input() mcTitle: string | TemplateRef<{}>;
+    @Input() mcCloseByESC: boolean = true;
 
     @Input()
     get mcClosable() { return this._mcClosable; }
@@ -463,6 +464,8 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
         // Do the first change detection immediately
         // (or we do detection at ngAfterViewInit, multi-changes error will be thrown)
         this.contentComponentRef.changeDetectorRef.detectChanges();
+
+
     }
 
     // Update transform-origin to the last click position on document

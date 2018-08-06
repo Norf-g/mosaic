@@ -99,7 +99,7 @@ export class ModalDemoComponent {
     openAndCloseAll() {
         let pos = 0;
 
-        [ 'create', 'warn', 'success' ].forEach((method) => this.modalService[method]({
+        [ 'create', 'delete', 'success' ].forEach((method) => this.modalService[method]({
             mcOkText    : 'Yes',
             mcMask: false,
             mcContent: `Test content: <b>${method}</b>`,

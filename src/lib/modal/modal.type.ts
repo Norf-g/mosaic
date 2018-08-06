@@ -32,6 +32,7 @@ export interface IModalOptions<T = any, R = any> {
     mcGetContainer?: HTMLElement | OverlayRef | (() => HTMLElement | OverlayRef) | null; // STATIC
     mcAfterOpen?: EventEmitter<void>;
     mcAfterClose?: EventEmitter<R>;
+    mcCloseByESC?: boolean;
 
     // --- Predefined OK & Cancel buttons
     mcOkText?: string;
