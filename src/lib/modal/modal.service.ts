@@ -113,7 +113,7 @@ export class McModalService {
     }
 
     delete<T>(options: IModalOptionsForService<T> = {}): McModalRef<T> {
-        return this.simpleConfirm(options, 'delete');
+        return this.simpleConfirm(options, 'warn');
     }
 
     private simpleConfirm<T>(options: IModalOptionsForService<T> = {}, confirmType: ConfirmType): McModalRef<T> {

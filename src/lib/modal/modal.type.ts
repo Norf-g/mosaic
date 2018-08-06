@@ -9,7 +9,7 @@ export type OnClickCallback<T> = ((instance: T) => (false | void | {}) | Promise
 export type ModalType = 'default' | 'confirm';
 
 // Subtypes of Confirm Modal
-export type ConfirmType = 'confirm' | 'success' | 'delete';
+export type ConfirmType = 'confirm' | 'success' | 'warn';
 
 // Public options for using by service
 export interface IModalOptions<T = any, R = any> {

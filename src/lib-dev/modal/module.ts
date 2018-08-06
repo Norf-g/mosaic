@@ -37,7 +37,7 @@ export class ModalDemoComponent {
             mcContent   : 'The selected action "Send to Arbor" is used in a rule' +
                 ' or an alert. It will be <b>deleted</b> there too. </br></br>' +
                 'Delete the selected action anyway?',
-            mcOkType    : 'danger',
+            mcOkType    : 'warn',
             mcOkText    : 'Yes',
             mcCancelText: 'No',
             mcWidth     : '480px',
@@ -99,7 +99,7 @@ export class ModalDemoComponent {
     openAndCloseAll() {
         let pos = 0;
 
-        [ 'create', 'delete', 'success' ].forEach((method) => this.modalService[method]({
+        [ 'create', 'warn', 'success' ].forEach((method) => this.modalService[method]({
             mcOkText    : 'Yes',
             mcMask: false,
             mcContent: `Test content: <b>${method}</b>`,
