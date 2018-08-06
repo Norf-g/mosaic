@@ -16,62 +16,22 @@ import { McModalService } from './modal.service';
 // tslint:disable:max-line-length
 // tslint:disable:no-console
 // tslint:disable:no-unnecessary-class
-describe('McModal - css-unit.pipe', () => {
-    let testElement: HTMLDivElement;
-    let fixture: ComponentFixture<{}>;
-
-    beforeEach(fakeAsync(() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                CssUnitPipe, TestCssUnitPipeComponent
-            ]
-        });
-
-        TestBed.compileComponents();
-    }));
-
-    beforeEach(async(() => {
-        TestBed.configureTestingModule({
-            declarations: [  ]
-        }).compileComponents();
-    }));
-
-    beforeEach(() => {
-        fixture = TestBed.createComponent(TestCssUnitPipeComponent);
-        testElement = fixture.debugElement.query(By.css('div')).nativeElement;
-        fixture.detectChanges();
-    });
-
-    it('should "width" & "height" to be 100px', () => {
-        // fixture.detectChanges();
-        expect(testElement.style.width).toBe('100px');
-        expect(testElement.style.height).toBe('100px');
-    });
-
-    it('should "top" to be 100pt', () => {
-        // fixture.detectChanges();
-        expect(testElement.style.top).toBe('100pt');
-    });
-});
-
 describe('McModal', () => {
     let modalService: McModalService;
     let overlayContainer: OverlayContainer;
     let overlayContainerElement: HTMLElement;
 
-    beforeEach(fakeAsync(() => {
+    beforeEach(async(() => {
         TestBed.configureTestingModule({
-            imports: [ McModalModule ],
-            providers   : [ McMeasureScrollbarService ],
-            declarations: [
-                ModalByServiceComponent
-            ]
+            imports: [ ModalTestModule ],
+            providers: [ McMeasureScrollbarService ]
         });
 
         TestBed.compileComponents();
     }));
 
-    beforeEach(inject([ McModalService, OverlayContainer ], (ms: McModalService, oc: OverlayContainer) => {
+    beforeEach(inject([ McModalService, OverlayContainer ],
+        (ms: McModalService, oc: OverlayContainer) => {
         modalService = ms;
         overlayContainer = oc;
         overlayContainerElement = oc.getContainerElement();
@@ -88,8 +48,7 @@ describe('McModal', () => {
             fixture = TestBed.createComponent(ModalByServiceComponent);
         });
 
-        // wait all openModals tobe closed to clean up the ModalManager as it is globally static
-        afterEach(fakeAsync(() => {
+        afterEach(fakeAsync(() => { // wait all openModals tobe closed to clean up the ModalManager as it is globally static
             modalService.closeAll();
             fixture.detectChanges();
             tick(1000);
@@ -112,6 +71,80 @@ describe('McModal', () => {
             expect(modalService.openModals.length).toBe(1);
         }));
 
+        it('should trigger both afterClose/mcAfterClose and have the correct openModals length', fakeAsync(() => {
+            const spy = jasmine.createSpy('afterClose spy');
+            const mcAfterClose = new EventEmitter<void>();
+            const modalRef = modalService.create({ mcAfterClose });
+
+            modalRef.afterClose.subscribe(spy);
+            mcAfterClose.subscribe(spy);
+
+            fixture.detectChanges();
+            tick(600);
+            modalRef.close();
+            fixture.detectChanges();
+            expect(spy).not.toHaveBeenCalled();
+
+            tick(600);
+            expect(spy).toHaveBeenCalledTimes(2);
+            expect(modalService.openModals.indexOf(modalRef)).toBe(-1);
+            expect(modalService.openModals.length).toBe(0);
+        }));
+
+        it('should return/receive with/without result data', fakeAsync(() => {
+            const spy = jasmine.createSpy('afterClose without result spy');
+            const modalRef = modalService.success();
+
+            modalRef.afterClose.subscribe(spy);
+            fixture.detectChanges();
+            tick(600);
+            modalRef.destroy();
+            expect(spy).not.toHaveBeenCalled();
+            tick(600);
+            expect(spy).toHaveBeenCalledWith(undefined);
+        }));
+
+        it('should return/receive with result data', fakeAsync(() => {
+            const result = { data: 'Fake Error' };
+            const spy = jasmine.createSpy('afterClose with result spy');
+            const modalRef = modalService.delete();
+
+            fixture.detectChanges();
+            tick(600);
+            modalRef.destroy(result);
+            modalRef.afterClose.subscribe(spy);
+            expect(spy).not.toHaveBeenCalled();
+            tick(600);
+            expect(spy).toHaveBeenCalledWith(result);
+        }));
+
+        it('should close all opened modals (include non-service modals)', fakeAsync(() => {
+            const spy = jasmine.createSpy('afterAllClose spy');
+            const modalMethods = [ 'create', 'delete', 'success' ];
+            const uniqueId = (name: string) => `__${name}_ID_SUFFIX__`;
+            const queryOverlayElement = (name: string) => overlayContainerElement.querySelector(`.${uniqueId(name)}`) as HTMLElement;
+
+            modalService.afterAllClose.subscribe(spy);
+
+            fixture.componentInstance.nonServiceModalVisible = true; // Show non-service modal
+            modalMethods.forEach((method) => modalService[method]({ mcWrapClassName: uniqueId(method) })); // Service modals
+
+            fixture.detectChanges();
+            tick(600);
+            // Cover non-service modal for later checking
+            (modalMethods.concat('NON_SERVICE')).forEach((method) => {
+                expect(queryOverlayElement(method).style.display).not.toBe('none');
+            });
+            expect(modalService.openModals.length).toBe(4);
+
+            modalService.closeAll();
+            fixture.detectChanges();
+            expect(spy).not.toHaveBeenCalled();
+            tick(600);
+            expect(spy).toHaveBeenCalled();
+            expect(modalService.openModals.length).toBe(0);
+        }));
+
         it('should modal not be registered twice', fakeAsync(() => {
             const modalRef = modalService.create();
 
@@ -121,7 +154,7 @@ describe('McModal', () => {
             expect(modalService.openModals.length).toBe(1);
         }));
 
-        it('should trigger mcOnOk/mcOnCancel', () => {
+        it('should trigger nzOnOk/nzOnCancel', () => {
             const spyOk = jasmine.createSpy('ok spy');
             const spyCancel = jasmine.createSpy('cancel spy');
             const modalRef: McModalRef = modalService.create({
@@ -154,13 +187,29 @@ class TestCssUnitPipeComponent { }
 @Component({
     selector: 'mc-modal-by-service',
     template: `
-        <mc-modal [(mcVisible)]="nonServiceModalVisible"></mc-modal>
+        <mc-modal [(mcVisible)]="nonServiceModalVisible" mcWrapClassName="__NON_SERVICE_ID_SUFFIX__"></mc-modal>
     `,
     // Testing for service with parent service
     providers: [ McModalControlService ]
 })
-export class ModalByServiceComponent {
+class ModalByServiceComponent {
     nonServiceModalVisible = false;
 
+    // @ts-ignore
     constructor(modalControlService: McModalControlService) {}
 }
+
+
+const TEST_DIRECTIVES = [
+    ModalByServiceComponent
+];
+
+@NgModule({
+    imports: [ McModalModule ],
+    exports: TEST_DIRECTIVES,
+    declarations: TEST_DIRECTIVES,
+    entryComponents: [
+        ModalByServiceComponent
+    ]
+})
+class ModalTestModule { }

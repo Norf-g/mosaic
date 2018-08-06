@@ -116,7 +116,7 @@
         </div> <!-- /.mc-confirm-body-wrapper -->
     </div>
     <div class="mc-confirm-btns">
-        <button mc-button [color]="mcOkType" *ngIf="mcOkText !== ''" (click)="onClickOkCancel('ok')">
+        <button mc-button [color]="mcOkType" #autoFocusButtonOk *ngIf="mcOkText !== ''" (click)="onClickOkCancel('ok')">
             {{ okText }}
         </button>
         <button mc-button color="second" *ngIf="mcCancelText!==''" (click)="onClickOkCancel('cancel')">

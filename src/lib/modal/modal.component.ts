@@ -1,5 +1,3 @@
-import { Observable } from 'rxjs';
-
 import { DOCUMENT } from '@angular/common';
 import {
     AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
@@ -22,15 +20,17 @@ import {
     ViewChild,
     ViewContainerRef, ViewEncapsulation
 } from '@angular/core';
-
+import { ESCAPE } from '@ptsecurity/cdk/keycodes';
 import { Overlay, OverlayRef } from '@ptsecurity/cdk/overlay';
 import { McMeasureScrollbarService } from '@ptsecurity/mosaic/core';
+import { Observable } from 'rxjs';
 
 import { McModalControlService } from './modal-control.service';
 import { McModalRef } from './modal-ref.class';
-import { IModalButtonOptions, IModalOptions, ModalType, OnClickCallback } from './modal.type';
 // tslint:disable-next-line
 import ModalUtil from './modal-util';
+import { IModalButtonOptions, IModalOptions, ModalType, OnClickCallback } from './modal.type';
+
 
 // Duration when perform animations (ms)
 export const MODAL_ANIMATE_DURATION = 200;
@@ -42,7 +42,10 @@ type AnimationState = 'enter' | 'leave' | null;
     templateUrl: './modal.component.html',
     styleUrls: ['./modal.css'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    encapsulation: ViewEncapsulation.None
+    encapsulation: ViewEncapsulation.None,
+    host: {
+        '(keydown)': 'onKeyDown($event)'
+    }
 })
 export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     implements OnInit, OnChanges, AfterViewInit, OnDestroy, IModalOptions {
@@ -59,7 +62,7 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     @Input()
     get mcVisible() { return this._mcVisible; }
     set mcVisible(value) { this._mcVisible = value; }
-  _mcVisible = false;
+    _mcVisible = false;
 
     @Output() mcVisibleChange = new EventEmitter<boolean>();
 
@@ -271,6 +274,15 @@ export class McModalComponent<T = any, R = any> extends McModalRef<T, R>
     // tslint:disable-next-line
     isModalType(type: ModalType): boolean {
         return this.mcModalType === type;
+    }
+
+    onKeyDown(event: KeyboardEvent): void {
+
+        if (event.keyCode === ESCAPE && this.container && (this.container instanceof OverlayRef)) {
+
+            this.close();
+            event.preventDefault();
+        }
     }
 
     // AoT

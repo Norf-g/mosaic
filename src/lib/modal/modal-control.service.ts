@@ -12,6 +12,7 @@ interface IRegisteredMeta {
 
 @Injectable()
 export class McModalControlService {
+
     // Track singleton afterAllClose through over the injection tree
     get afterAllClose(): Subject<void> {
         return this.parentService ? this.parentService.afterAllClose : this.rootAfterAllClose;
@@ -26,11 +27,11 @@ export class McModalControlService {
     private rootOpenModals: McModalRef[] = this.parentService ? null : [];
     // @ts-ignore
     private rootAfterAllClose: Subject<void> = this.parentService ? null : new Subject<void>();
-
     // @ts-ignore
     private rootRegisteredMetaMap: Map<McModalRef, IRegisteredMeta> = this.parentService ? null : new Map();
 
-    private get registeredMetaMap(): Map<McModalRef, IRegisteredMeta> { // Registered modal for later usage
+    // Registered modal for later usage
+    private get registeredMetaMap(): Map<McModalRef, IRegisteredMeta> {
         return this.parentService ? this.parentService.registeredMetaMap : this.rootRegisteredMetaMap;
     }
 
